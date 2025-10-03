@@ -1,0 +1,105 @@
+---
+title: "How to download high resolution satellite images with R"
+author: "Edson Silva-Júnior"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# How to download high resolution satellite images with R
+
+Our first step is to library the required packages: 
+
+- We use [geobr](https://github.com/ipeaGIT/geobr) package to download our area shapefile, Recife municipality, Pernambuco's capital; 
+
+- We use [tidyverse](https://www.tidyverse.org/packages) to trate and filter our shapefile, to get only Recife area feature;
+
+- We use [maptiles](https://github.com/riatelab/maptilesmaptiles Github page) package to download our satellite image, onde raster class;
+
+- We use [tidyterra](https://dieghernan.github.io/tidyterra) package to visualizing multicolar raster throught ggplot;
+
+- We use [terra](https://github.com/ipeaGIT/geobr) package to export our downloaded raster.
+
+# Packages 
+
+```{r}
+library(geobr)
+
+library(tidyverse)
+
+library(maptiles)
+
+library(tidyterra)
+
+library(terra)
+```
+
+# Base Shapefile
+
+## Importing 
+
+First, lets to download a brazilian municipalities shapefile throught `geobr::read_municipality()` and use `dplyr::filter()` to get only Recife feature.
+
+```{r}
+recife <- geobr::read_municipality(year = 2019) |> 
+  dplyr::filter(name_muni == "Recife")
+
+```
+
+## Visualizing 
+
+Next, lets vicualize our base shapefile, using a ggplot plot.
+
+```{r}
+recife
+
+ggplot() +
+  geom_sf(data = recife, color = "black", linewidth = 1)
+```
+
+# Satellite image
+
+## Downloading
+
+Now, our next step is to download our satellite raster, to Recife's area. We use `maptiles::get_tiles()`, informing:
+
+- Our shapefile to use as base area (`x`);
+
+- Which imagery we want to use (`provider`). `"Esri.WorldImagery"` let us to use a raster such as Google Earth. Check [maptiles Github page](https://github.com/riatelab/maptilesmaptiles Github page) to see more imageries options;
+
+- Zoom (`zoom`), to set how resoluted the raster let be. See [OpenStreetMap wiki](https://wiki.openstreetmap.org/wiki/Zoom_levels) for details.
+
+```{r}
+image <- maptiles::get_tiles(x = recife,
+                              provider = "Esri.WorldImagery",
+                              zoom = 16)
+```
+
+
+## Visualizing 
+
+Finaly, we obtained our satellite raster, using `tidyterra::geom_spatraster_rgb()` to load and visualize the colored raster. Check [tidyterra](https://dieghernan.github.io/tidyterra) for details.
+
+```{r}
+image
+
+ggplot() +
+  tidyterra::geom_spatraster_rgb(data = image) +
+  geom_sf(data = recife, fill = "transparent", color = "red", linewidth = 1) +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0)) +
+  theme_bw()
+```
+
+## Exporting
+
+To the end, we go to export our raster, mainly to do not be necessary download our satellite image again, using `terra::writeRaster()`
+
+```{r}
+image |>
+  terra::writeRaster("recife_image.tif")
+```
+
