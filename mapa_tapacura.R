@@ -42,37 +42,38 @@ ggplot() +
 
 ### Importando ----
 
-sat <- terra::rast("sao_lourenco_da_mata.tif")
+sat <- terra::rast("tapacura.tif")
 
 ### Visualizando ----
 
 ggplot() +
   tidyterra::geom_spatraster_rgb(data = sat) +
-  scale_x_continuous(limits = c(-35.22, -35.15)) +
-  scale_y_continuous(limits = c(-8.08, -8.02))
+  coord_sf(expand = FALSE) +
+  theme_bw()
 
 # Mapa ----
 
 ## Escalas de diferença ----
 
-escala_x <- (35.22 - 35.15) * 200
+escala_x <- (35.23 - 35.15) * 200
 
 escala_x
 
-escala_y <- (8.08 -8.02) * 200
+escala_y <- (8.07 - 8.02) * 200
 
 escala_y
 
 ## inset map ----
 
 inset_map <- ggplot(data = br) +
-  geom_sf(color = "black", fill = "white", linewidth = 1) +
-  geom_sf(data = pe, color = "black", fill = "goldenrod", linewidth = 1) +
-  scale_x_continuous(limits = c(-74, -19)) +
-  scale_y_continuous(limits = c(-33.76, 8)) +
+  geom_sf(color = "black", fill = "white", linewidth = 0.5) +
+  geom_sf(data = pe, color = "black", fill = "goldenrod", linewidth = 0.5) +
+  scale_x_continuous(limits = c(-74, -16)) +
+  scale_y_continuous(limits = c(-33.76, 6.2)) +
   theme_void() +
   tidyterra::geom_spatraster_rgb(data = sat) +
-  ggmagnify::geom_magnify(from = c(-35.22, -35.15, -8.08, -8.02),
+  ggmagnify::geom_magnify(from = c(-35.23, -35.15,
+                                   -8.07, -8.02),
                           to = c(-33, -33 + escala_x, -4, -4 + escala_y),
                           shadow = TRUE,
                           colour = "darkred",
@@ -88,8 +89,8 @@ mapa_principal <- ggplot(data = br) +
   geom_sf(data = pe, color = "black", aes(fill = "Pernambuco"), linewidth = 1) +
   tidyterra::geom_spatraster_rgb(data = sat) +
   coord_sf(label_graticule = "NSWE",
-           xlim = c(-35.22, -35.15),
-           ylim = c(-8.08, -8.02)) +
+           xlim = c(-35.23, -35.15),
+           ylim = c(-8.07, -8.02)) +
   scale_x_continuous(breaks = seq(-35.22, -35.15, 0.025)) +
   scale_y_continuous(breaks = seq(-8.08, -8.02, 0.02)) +
   scale_fill_manual(values = c("white",
@@ -120,8 +121,8 @@ mapa_principal
 
 cowplot::ggdraw(mapa_principal) +
   cowplot::draw_plot(inset_map,
-                     x = 0.62,
-                     y = 0.1,
+                     x = 0.66,
+                     y = 0.57,
                      height = 0.35,
                      width = 0.35) +
   ggview::canvas(height = 10, width = 12)
