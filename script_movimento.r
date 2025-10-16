@@ -244,7 +244,7 @@ bb_contour_50 <- bb_ecomov |>
 
 bb_contour_50
 
-### Visualizando 95% e 50%
+### Visualizando 95% e 50% ----
 
 ggplot() +
   geom_sf(data = bb_contour_95 |>
