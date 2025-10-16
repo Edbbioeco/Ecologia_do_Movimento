@@ -267,6 +267,8 @@ ggplot() +
                                "red")) +
   theme_minimal()
 
+ggsave(filename = "mapa_bbmm.png", height = 10, width = 12)
+
 # Áreas ----
 
 ls(pattern = "bb_contour") |>
