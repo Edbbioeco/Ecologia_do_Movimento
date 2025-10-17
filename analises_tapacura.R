@@ -20,7 +20,8 @@ library(sp)
 
 ### Importando ----
 
-dados <- read.csv("dados_gps.csv")
+dados <- read.csv("dados_gps.csv",
+                  sep = ";")
 
 ### Visualizando ----
 
@@ -32,9 +33,14 @@ dados |> dplyr::glimpse()
 
 dados <- dados |>
   dplyr::mutate(long = long |> parzer::parse_lon(),
-                lat = lat |> parzer::parse_lat())
+                lat = lat |> parzer::parse_lat(),
+                datetime = paste0(date, time) |>
+                  lubridate::mdy_hm()) |>
+  tidyr::drop_na()
 
 dados
+
+dados |> dplyr::glimpse()
 
 ### Criando shapefile ----
 
@@ -47,8 +53,14 @@ sf_dados
 
 ggplot() +
   geom_sf(data = sf_dados |>
-            sf::st_as_sf() |>
-            sf::st_set_crs(4674)) +
+            sf::st_transform(crs = 4674)) +
+  geom_path(data = dados, aes(long, lat)) +
+  geom_sf(data = sf_dados |>
+              dplyr::slice_head(),
+            color = "blue") +
+  geom_sf(data = sf_dados |>
+              dplyr::slice_tail(),
+            color = "red") +
   theme_bw()
 
 ## Imagem de satélite ----
@@ -63,6 +75,11 @@ tapacura_sat
 
 ggplot() +
   tidyterra::geom_spatraster_rgb(data = tapacura_sat) +
+  geom_sf(data = sf_dados |>
+            sf::st_transform(crs = 4674),
+          color = "gold") +
+  geom_path(data = dados, aes(long, lat),
+            color = "gold") +
   coord_sf(expand = FALSE) +
   theme_minimal()
 
@@ -75,6 +92,7 @@ terra::crs(tapacura_sat) <- "EPSG:4674"
 ## 95% ----
 
 mcp_95 <- sf_dados |>
+  sf::as_Spatial() |>
   adehabitatHR::mcp(percent = 95) |>
   sf::st_as_sf() |>
   dplyr::mutate(`% de ocorrências` = "95%")
@@ -84,6 +102,7 @@ mcp_95
 ## 100% ----
 
 mcp_100 <- sf_dados |>
+  sf::as_Spatial() |>
   adehabitatHR::mcp(percent = 100) |>
   sf::st_as_sf() |>
   dplyr::mutate(`% de ocorrências` = "100%")
@@ -101,18 +120,29 @@ unido_mcp
 ## Gráfico ----
 
 ggplot() +
-  tidyterra::geom_spatraster_rgb(data = tapacura_sat) +
   geom_sf(data = unido_mcp |>
-            sf::st_set_crs(4674),
+            sf::st_transform(crs = 4674),
           aes(color = `% de ocorrências`,
                                 fill = `% de ocorrências`),
           alpha = 0.3) +
   coord_sf(expand = FALSE) +
-  geom_sf(data = sf_dados, aes(color = "Pontos de registro")) +
   scale_fill_manual(values = c("orange",
-                               "gold",
-                               "red")) +
-  theme_minimal()
+                               "royalblue")) +
+  scale_color_manual(values = c("orange",
+                               "royalblue")) +
+  guides(fill = guide_legend(title.position = "top"),
+         color = guide_legend(title.position = "top")) +
+  ggnewscale::new_scale_color() +
+  geom_sf(data = sf_dados, aes(color = "Pontos de registro")) +
+  scale_color_manual(values = c("red")) +
+  labs(colour = NULL,
+       x = NULL,
+       y = NULL) +
+  theme_bw() +
+  theme(axis.text = element_text(size = 15, color = "black"),
+        legend.text = element_text(size = 15, color = "black"),
+        legend.title = element_text(size = 15, color = "black"),
+        legend.position = "bottom")
 
 ggsave(filename = "mapa_mcp.png", height = 10, width = 12)
 
@@ -125,6 +155,7 @@ unido_mcp |> sf::st_area() / 1e6
 ## KDE ----
 
 kde <- sf_dados |>
+  sf::as_Spatial() |>
   adehabitatHR::kernelUD(h = "href")
 
 kde
@@ -143,7 +174,7 @@ kde_contour_95
 kde_contour_50 <-  kde |>
   adehabitatHR::getverticeshr(percent = 50) |>
   sf::st_as_sf(crs = 32725) |>
-  dplyr::mutate(`Área de vida` = "55%")
+  dplyr::mutate(`Área de vida` = "50%")
 
 kde_contour_50
 
@@ -151,25 +182,33 @@ kde_contour_50
 
 unido_kde <- ls(pattern = "kde_contour_") |>
   mget(envir = globalenv()) |>
-  dplyr::bind_rows()
+  dplyr::bind_rows() |>
+  dplyr::arrange(`Área de vida` |> dplyr::desc())
 
 unido_kde
 
 ## Gráfico ----
 
 ggplot() +
-  tidyterra::geom_spatraster_rgb(data = tapacura_sat) +
   geom_sf(data = unido_kde |>
-            sf::st_set_crs(4674),
+            sf::st_transform(crs = 4674),
           aes(color = `Área de vida`,
-              fill = `Área de vida`),
-          alpha = 0.3) +
-  coord_sf(expand = FALSE) +
-  geom_sf(data = sf_dados, aes(color = "Pontos de registro")) +
+              fill = `Área de vida`)) +
+  scale_color_manual(values = c("orange",
+                               "royalblue")) +
   scale_fill_manual(values = c("orange",
-                               "gold",
-                               "red")) +
-  theme_minimal()
+                               "royalblue")) +
+  guides(fill = guide_legend(title.position = "top"),
+         color = guide_legend(title.position = "top")) +
+  ggnewscale::new_scale_color() +
+  geom_sf(data = sf_dados, aes(color = "Pontos de registro")) +
+  scale_color_manual(values = "black") +
+  labs(color = NULL) +
+  theme_bw() +
+  theme(axis.text = element_text(size = 15, color = "black"),
+        legend.text = element_text(size = 15, color = "black"),
+        legend.title = element_text(size = 15, color = "black"),
+        legend.position = "bottom")
 
 ggsave(filename = "mapa_area_vida.png", height = 10, width = 12)
 
@@ -184,8 +223,8 @@ unido_kde |> sf::st_area() / 1e6
 traj <- adehabitatLT::as.ltraj(xy = sf_dados |>
                                          sf::st_coordinates() |>
                                          as.data.frame(),
-                                       date = ecomov$datetime,
-                                       id = ecomov$id,
+                                       date = dados$datetime,
+                                       id = dados$id,
                                        proj4string = sp::CRS("+init=epsg:32725"))
 
 traj
@@ -203,7 +242,7 @@ adehabitatHR::liker(traj,
 ## Calcular o modelo de utilização da área ----
 
 bb_traj <- adehabitatHR::kernelbb(traj,
-                                    sig1 = 2,
+                                    sig1 = 4,
                                     sig2 = 5,
                                     grid = 500,
                                     extent = 5,
@@ -243,11 +282,16 @@ bb_contour_50
 ## Unindo ----
 
 unido_bb <- dplyr::bind_rows(bb_contour_95 |>
-                               sf::st_as_sf(crs = 4674) |>
+                               sf::st_as_sf(crs = 32725) |>
+                               sf::st_set_crs(32725) |>
+                               sf::st_transform(crs = 4674) |>
                                dplyr::mutate(`Brownian Bridge Moviment Model` = "95%"),
                              bb_contour_50 |>
-                               sf::st_as_sf(crs = 4674) |>
-                               dplyr::mutate(`Brownian Bridge Moviment Model` = "50%"))
+                               sf::st_as_sf(crs = 32725) |>
+                               sf::st_set_crs(32725) |>
+                               sf::st_transform(crs = 4674) |>
+                               dplyr::mutate(`Brownian Bridge Moviment Model` = "50%")) |>
+  dplyr::arrange(`Brownian Bridge Moviment Model` |> dplyr::desc())
 
 unido_bb
 
@@ -255,16 +299,30 @@ unido_bb
 ## Visualizando ----
 
 ggplot() +
-  tidyterra::geom_spatraster(data = bb_traj_rast) +
   geom_sf(data = unido_bb,
           aes(color = `Brownian Bridge Moviment Model`,
-              fill = `Brownian Bridge Moviment Model`),
-          alpha = 0.3) +
-  coord_sf(expand = FALSE) +
-  geom_sf(data = sf_dados, aes(color = "Pontos de registro")) +
+              fill = `Brownian Bridge Moviment Model`)) +
+  scale_color_manual(values = c("orange",
+                                "royalblue")) +
   scale_fill_manual(values = c("orange",
-                               "gold",
-                               "red")) +
+                               "royalblue")) +
+  guides(fill = guide_legend(title.position = "top",
+                             title.hjust = 0.5),
+         color = guide_legend(title.position = "top",
+                              title.hjust = 0.5)) +
+  ggnewscale::new_scale_color() +
+  geom_sf(data = sf_dados, aes(color = "Pontos de registro")) +
+  geom_path(data = dados, aes(long, lat, color = "Trajetória")) +
+  scale_color_manual(values = c("black",
+                                "red")) +
+  labs(color = NULL,
+       x = NULL,
+       y = NULL) +
+  theme_bw() +
+  theme(axis.text = element_text(size = 15, color = "black"),
+        legend.text = element_text(size = 15, color = "black"),
+        legend.title = element_text(size = 15, color = "black"),
+        legend.position = "bottom")
   theme_minimal()
 
 ggsave(filename = "mapa_bbmm.png", height = 10, width = 12)
