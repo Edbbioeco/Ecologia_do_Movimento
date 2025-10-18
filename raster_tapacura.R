@@ -79,4 +79,4 @@ ggplot() +
 ## Exportando ----
 
 imagem |>
-  terra::writeRaster("tapacura.tif")
+  terra::writeRaster("tapacura_rec.tif")

@@ -12,6 +12,10 @@ library(tidyterra)
 
 library(adehabitatHR)
 
+library(ggnewscale)
+
+library(ggspatial)
+
 library(sp)
 
 # Dados ----
@@ -67,7 +71,7 @@ ggplot() +
 
 ### Importando ----
 
-tapacura_sat <- terra::rast("tapacura.tif")
+tapacura_sat <- terra::rast("tapacura_rec.tif")
 
 ### Visualizando ----
 
@@ -120,11 +124,12 @@ unido_mcp
 ## Gráfico ----
 
 ggplot() +
+  tidyterra::geom_spatraster_rgb(data = tapacura_sat) +
   geom_sf(data = unido_mcp |>
             sf::st_transform(crs = 4674),
           aes(color = `% de ocorrências`,
                                 fill = `% de ocorrências`),
-          alpha = 0.3) +
+          alpha = 0.3, linewidth = 1) +
   coord_sf(expand = FALSE) +
   scale_fill_manual(values = c("orange",
                                "royalblue")) +
@@ -138,6 +143,12 @@ ggplot() +
   labs(colour = NULL,
        x = NULL,
        y = NULL) +
+  scale_x_continuous(limits = c(-35.203, -35.19)) +
+  scale_y_continuous(limits = c(-8.045, -8.031)) +
+  ggspatial::annotation_scale(text_cex = 1.5,
+                              text_face = "bold",
+                              height = unit(0.5, "cm")) +
+  coord_sf(expand = FALSE) +
   theme_bw() +
   theme(axis.text = element_text(size = 15, color = "black"),
         legend.text = element_text(size = 15, color = "black"),
@@ -190,20 +201,29 @@ unido_kde
 ## Gráfico ----
 
 ggplot() +
+  tidyterra::geom_spatraster_rgb(data = tapacura_sat) +
   geom_sf(data = unido_kde |>
             sf::st_transform(crs = 4674),
           aes(color = `Área de vida`,
-              fill = `Área de vida`)) +
-  scale_color_manual(values = c("orange",
-                               "royalblue")) +
-  scale_fill_manual(values = c("orange",
-                               "royalblue")) +
+              fill = `Área de vida`),
+          alpha = 0.3,
+          linewidth = 1) +
+  scale_color_manual(values = c("royalblue",
+                                "orange")) +
+  scale_fill_manual(values = c("royalblue",
+                               "orange")) +
   guides(fill = guide_legend(title.position = "top"),
          color = guide_legend(title.position = "top")) +
   ggnewscale::new_scale_color() +
   geom_sf(data = sf_dados, aes(color = "Pontos de registro")) +
-  scale_color_manual(values = "black") +
+  scale_color_manual(values = "red") +
   labs(color = NULL) +
+  scale_x_continuous(limits = c(-35.203, -35.19)) +
+  scale_y_continuous(limits = c(-8.045, -8.031)) +
+  coord_sf(expand = FALSE) +
+  ggspatial::annotation_scale(text_cex = 1.5,
+                              text_face = "bold",
+                              height = unit(0.5, "cm")) +
   theme_bw() +
   theme(axis.text = element_text(size = 15, color = "black"),
         legend.text = element_text(size = 15, color = "black"),
@@ -244,7 +264,7 @@ adehabitatHR::liker(traj,
 bb_traj <- adehabitatHR::kernelbb(traj,
                                     sig1 = 4,
                                     sig2 = 5,
-                                    grid = 500,
+                                    grid = 1000,
                                     extent = 5,
                                     nalpha = 25)
 
@@ -299,35 +319,43 @@ unido_bb
 ## Visualizando ----
 
 ggplot() +
+  tidyterra::geom_spatraster_rgb(data = tapacura_sat) +
   geom_sf(data = unido_bb,
           aes(color = `Brownian Bridge Moviment Model`,
-              fill = `Brownian Bridge Moviment Model`)) +
-  scale_color_manual(values = c("orange",
-                                "royalblue")) +
-  scale_fill_manual(values = c("orange",
-                               "royalblue")) +
+              fill = `Brownian Bridge Moviment Model`),
+          alpha = 0.3,
+          linewidth = 1) +
+  scale_color_manual(values = c("royalblue",
+                                "orange")) +
+  scale_fill_manual(values = c("royalblue",
+                               "orange")) +
   guides(fill = guide_legend(title.position = "top",
                              title.hjust = 0.5),
          color = guide_legend(title.position = "top",
                               title.hjust = 0.5)) +
   ggnewscale::new_scale_color() +
-  geom_sf(data = sf_dados, aes(color = "Pontos de registro")) +
   geom_path(data = dados, aes(long, lat, color = "Trajetória")) +
-  scale_color_manual(values = c("black",
-                                "red")) +
+  geom_sf(data = sf_dados, aes(color = "Pontos de registro")) +
+  scale_color_manual(values = c("red",
+                                "black")) +
   labs(color = NULL,
        x = NULL,
        y = NULL) +
+  scale_x_continuous(limits = c(-35.203, -35.19)) +
+  scale_y_continuous(limits = c(-8.045, -8.031)) +
+  coord_sf(expand = FALSE) +
+  ggspatial::annotation_scale(text_cex = 1.5,
+                              text_face = "bold",
+                              height = unit(0.5, "cm")) +
   theme_bw() +
   theme(axis.text = element_text(size = 15, color = "black"),
         legend.text = element_text(size = 15, color = "black"),
         legend.title = element_text(size = 15, color = "black"),
         legend.position = "bottom")
-  theme_minimal()
 
 ggsave(filename = "mapa_bbmm.png", height = 10, width = 12)
 
-# Áreas ----
+## Áreas ----
 
 ls(pattern = "bb_contour") |>
   mget(envir = globalenv())
