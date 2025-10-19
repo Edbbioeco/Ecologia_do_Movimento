@@ -99,7 +99,7 @@ mcp_95 <- sf_dados |>
   sf::as_Spatial() |>
   adehabitatHR::mcp(percent = 95) |>
   sf::st_as_sf() |>
-  dplyr::mutate(`% de ocorrências` = "95%")
+  dplyr::mutate(`% de ocorrências` = "095%")
 
 mcp_95
 
@@ -130,11 +130,12 @@ ggplot() +
           aes(color = `% de ocorrências`,
                                 fill = `% de ocorrências`),
           alpha = 0.3, linewidth = 1) +
-  coord_sf(expand = FALSE) +
-  scale_fill_manual(values = c("orange",
-                               "royalblue")) +
-  scale_color_manual(values = c("orange",
-                               "royalblue")) +
+  coord_sf(expand = FALSE,
+           label_graticule = "NSEW") +
+  scale_fill_manual(values = c("royalblue",
+                               "orange")) +
+  scale_color_manual(values = c("royalblue",
+                                "orange")) +
   guides(fill = guide_legend(title.position = "top"),
          color = guide_legend(title.position = "top")) +
   ggnewscale::new_scale_color() +
