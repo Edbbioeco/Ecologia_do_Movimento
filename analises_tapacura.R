@@ -2,6 +2,8 @@
 
 library(tidyverse)
 
+library(magrittr)
+
 library(parzer)
 
 library(sf)
@@ -35,14 +37,12 @@ dados |> dplyr::glimpse()
 
 ### Tratando ----
 
-dados <- dados |>
+dados %<>%
   dplyr::mutate(long = long |> parzer::parse_lon(),
                 lat = lat |> parzer::parse_lat(),
                 datetime = paste0(date, time) |>
                   lubridate::mdy_hm()) |>
   tidyr::drop_na()
-
-dados
 
 dados |> dplyr::glimpse()
 
@@ -275,8 +275,6 @@ bb_traj_rast <- bb_traj |>
 
 terra::crs(bb_traj_rast) <- "EPSG:4674"
 
-terra::ext(bb_traj_rast) <- kde_rast |> terra::ext()
-
 ggplot() +
   tidyterra::geom_spatraster(data = bb_traj_rast) +
   scale_fill_viridis_c() +
@@ -334,7 +332,8 @@ ggplot() +
          color = guide_legend(title.position = "top",
                               title.hjust = 0.5)) +
   ggnewscale::new_scale_color() +
-  geom_path(data = dados, aes(long, lat, color = "Trajetória")) +
+  geom_path(data = dados,
+            aes(long, lat, color = "Trajetória")) +
   geom_sf(data = sf_dados, aes(color = "Pontos de registro")) +
   scale_color_manual(values = c("red",
                                 "black")) +
