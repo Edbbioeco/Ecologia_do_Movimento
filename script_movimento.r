@@ -2,6 +2,8 @@
 
 library(tidyverse)
 
+library(magrittr)
+
 library(adehabitatHR)
 
 library(sf)
@@ -27,7 +29,7 @@ ecomov |> dplyr::glimpse()
 
 ## Tratando ----
 
-ecomov <- ecomov |>
+ecomov %<>%
   dplyr::mutate(datetime = paste0(date, time) |>
                   lubridate::mdy_hms()) |>
   dplyr::arrange(datetime)
